@@ -33,6 +33,7 @@ public class JobService {
 
     public List<Review> getReviewList(Company company){
         List<Review> reviews = new ArrayList<>();
+        if(company == null) return reviews;
         try {
             reviews = reviewClient.getReviews(company.getId());
         } catch (FeignException.NotFound e) {
@@ -41,15 +42,25 @@ public class JobService {
         }
         return reviews;
     }
+    public Company getCompany(Long companyId){
+        Company company = null;
+        try {
+            company = companyClient.getCompany(companyId);
+        } catch (FeignException.NotFound e) {
+            // 404 Not Found - handle it by using an empty list
+            company = null;
+        }
+        return company;
+    }
 
 //    @CircuitBreaker(name="companyBreaker",fallbackMethod = "companyBreakerFallback")
 //    @Retry(name="companyBreaker",fallbackMethod = "companyBreakerFallback")
-    @RateLimiter(name="companyBreaker",fallbackMethod = "companyBreakerFallback")
+//    @RateLimiter(name="companyBreaker",fallbackMethod = "companyBreakerFallback")
     public List<JobWithCompanyDTO> findAll(){
         List<Job> list = repository.findAll();
         List<JobWithCompanyDTO> jobWithCompanyDTOS = new ArrayList<>();
         for(Job job:list){
-            Company company = companyClient.getCompany(job.getCompanyId());
+            Company company = getCompany(job.getCompanyId());
             List<Review> reviewList = getReviewList(company);
             jobWithCompanyDTOS.add( new JobMapper().mapToJobWithCompanyDTO(job,company,reviewList));
         }
